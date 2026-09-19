@@ -6,7 +6,7 @@ Optimizes for comfortable/safe routes instead of shortest distance, and lets the
 community report sidewalk hazards by photo; a vision-language model assesses each
 photo and updates the map. Scoped to one Pittsburgh neighborhood (default: Oakland).
 
-**Status: all 6 phases complete.** Full backend and frontend core loop: map
+Full backend and frontend core loop: map
 with route comparison and hazard markers, a full report flow (camera capture,
 location confirm, AI verdict card, reroute), natural-language mobility
 profiles (free text or voice input, confirmed in plain language before use),
@@ -156,15 +156,15 @@ is auto-generated. Drop in real photos with matching filenames to replace them.
 
 All configuration lives in `backend/.env` (see `.env.example`). Key variables:
 
-| Variable | Purpose |
-|---|---|
-| `BBOX_NORTH/SOUTH/EAST/WEST` | Neighborhood bounding box (default: Oakland, Pittsburgh) |
-| `DEMO_START_LAT/LON`, `DEMO_END_LAT/LON` | Demo route endpoints — **placeholders**, replace after scouting the area |
-| `OPENAI_API_KEY` | Your OpenAI key (leave blank to run fully in demo-mode fallback) |
-| `VLM_MODEL` | Vision-capable model for hazard photo analysis — set to a model your account can access |
-| `TEXT_MODEL` | Cheaper/faster text model for profile parsing and route explanations |
-| `REPORT_DECAY_DAYS` | Days for a hazard report's confidence to decay to zero (default 14) |
-| `DEMO_MODE` | When `true`, all LLM calls fall back to cached/templated responses on failure/timeout/no-key, so the demo never dies on bad wifi |
+| Variable                                 | Purpose                                                                                                                          |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `BBOX_NORTH/SOUTH/EAST/WEST`             | Neighborhood bounding box (default: Oakland, Pittsburgh)                                                                         |
+| `DEMO_START_LAT/LON`, `DEMO_END_LAT/LON` | Demo route endpoints — **placeholders**, replace after scouting the area                                                         |
+| `OPENAI_API_KEY`                         | Your OpenAI key (leave blank to run fully in demo-mode fallback)                                                                 |
+| `VLM_MODEL`                              | Vision-capable model for hazard photo analysis — set to a model your account can access                                          |
+| `TEXT_MODEL`                             | Cheaper/faster text model for profile parsing and route explanations                                                             |
+| `REPORT_DECAY_DAYS`                      | Days for a hazard report's confidence to decay to zero (default 14)                                                              |
+| `DEMO_MODE`                              | When `true`, all LLM calls fall back to cached/templated responses on failure/timeout/no-key, so the demo never dies on bad wifi |
 
 ## Mobility profiles
 
@@ -190,15 +190,15 @@ single neighborhood to more cities.
 
 ## API summary
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /api/config` | Bbox and demo start/end coordinates |
-| `POST /api/routes` | Shortest + Stepwise routes, stats, and an explanation |
-| `GET /api/reports` | Active hazard reports |
-| `POST /api/reports` | Submit a photo report (multipart: photo, lat, lon, note) |
-| `POST /api/reports/{id}/confirm` | `{"still_there": bool}` — confirm or deny |
-| `POST /api/profile/parse` | Parse a free-text mobility description |
-| `POST /api/demo/reset` | Restore the seeded demo hazards |
+| Endpoint                         | Purpose                                                  |
+| -------------------------------- | -------------------------------------------------------- |
+| `GET /api/config`                | Bbox and demo start/end coordinates                      |
+| `POST /api/routes`               | Shortest + Stepwise routes, stats, and an explanation    |
+| `GET /api/reports`               | Active hazard reports                                    |
+| `POST /api/reports`              | Submit a photo report (multipart: photo, lat, lon, note) |
+| `POST /api/reports/{id}/confirm` | `{"still_there": bool}` — confirm or deny                |
+| `POST /api/profile/parse`        | Parse a free-text mobility description                   |
+| `POST /api/demo/reset`           | Restore the seeded demo hazards                          |
 
 ## Roadmap
 
