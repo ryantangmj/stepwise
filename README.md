@@ -6,10 +6,11 @@ Optimizes for comfortable/safe routes instead of shortest distance, and lets the
 community report sidewalk hazards by photo; a vision-language model assesses each
 photo and updates the map. Scoped to one Pittsburgh neighborhood (default: Oakland).
 
-**Status: Phase 3 of 6 complete** — full backend (routing, hazard reports, VLM
+**Status: Phase 4 of 6 complete** — full backend (routing, hazard reports, VLM
 analysis, decay) plus a mobile-first React/Leaflet frontend: map with route
-comparison, colored hazard markers with photo/verdict popups, and a profile
-selector. The Report and Profile screens are still stubs (phases 4 and 5).
+comparison and hazard markers, and a full report flow (camera capture,
+location confirm with a draggable pin, AI verdict card, reroute). The Profile
+screen is still a stub (phase 5, natural-language profile parsing).
 
 ## Setup
 
@@ -91,7 +92,12 @@ narrow (~390px) width or in your browser's device toolbar to see the intended
 mobile layout. The Map tab is fully functional: profile chips, tap-to-set start
 (A) and end (B), Shortest (red dashed) vs Stepwise (teal) routes, a comparison
 card, and hazard markers you can tap for the photo/AI verdict and Confirm/Gone
-buttons. Report and Profile tabs are placeholders until phases 4 and 5.
+buttons. The Report tab is also fully functional: take/choose a photo, confirm
+the location (drag the pin or tap the map — device geolocation prefills it
+where available), optionally add a note, submit, and see the AI verdict card
+(severity, per-profile passability, confidence, and a follow-up question if
+the photo needs more detail) before returning to the map with the new hazard
+in place. The Profile tab is a placeholder until phase 5.
 
 ## Configuration
 
@@ -126,6 +132,6 @@ single neighborhood to more cities.
 1. ✅ Backend skeleton, graph download/cache, elevation, profile-aware routing
 2. ✅ Reports storage, snapping, hazard penalties, decay, VLM analysis endpoint
 3. ✅ Frontend map, route comparison, hazard markers, profile selector
-4. Report flow (camera, location confirm, VLM result card, reroute)
+4. ✅ Report flow (camera, location confirm, VLM result card, reroute)
 5. Natural-language profile parsing, route explanations, voice input
 6. Seed script, reset endpoint, UI polish

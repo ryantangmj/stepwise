@@ -58,8 +58,8 @@ npm run lint
 2. Reports storage, snapping, hazard penalties, decay, VLM analysis endpoint — DONE
    (route explanations via `app/llm.py` also landed here, ahead of phase 5)
 3. Frontend map, route comparison, hazard markers, profile selector — DONE
-   (Report/Profile screens are stubs pending phases 4/5)
-4. Report flow (camera, location confirm, VLM result card, reroute)
+   (Profile screen is still a stub pending phase 5)
+4. Report flow (camera, location confirm, VLM result card, reroute) — DONE
 5. Natural-language profile parsing (`/api/profile/parse`), voice input
 6. Seed script, reset endpoint, README polish, UI polish
 
@@ -88,6 +88,32 @@ npm run lint
 - Verified with a scripted Playwright pass (headless Chromium at a 390px
   mobile viewport) rather than just visual inspection — that's how both
   Leaflet issues above were actually caught.
+- Known harmless console warning: occasionally, right around a draggable
+  `Marker`'s host component unmounting (e.g. leaving the Report screen),
+  Leaflet logs `TypeError: Cannot read properties of undefined (reading
+  '_leaflet_pos')`. This is an intermittent Leaflet/react-leaflet internal
+  cleanup race (a stale DOM reference in `L.Draggable`'s teardown), not
+  reproducible on demand, and doesn't affect app behavior — confirmed via
+  repeated scripted runs where the full flow completed correctly whether or
+  not the warning fired. Not worth chasing further; mentioning here so a
+  future session doesn't mistake it for a real regression.
+
+## Report flow (phase 4)
+`screens/ReportScreen.tsx` is a 3-step wizard (`capture` → `confirm` →
+`result`), no routing library needed:
+- **capture**: a hidden `<input type=file accept=image/* capture=environment>`
+  triggered by a big button — this is what actually opens the phone camera.
+- **confirm**: photo preview, a small map with a draggable `Marker` *and* a
+  map-click handler both updating the same `location` state (draggable pin +
+  tap-to-place fallback, per the brief, on the same widget rather than two
+  separate UIs). `navigator.geolocation` prefills the pin but is best-effort
+  and non-blocking — no geolocation support/permission just leaves the
+  default (the map's current start point) for the user to correct manually.
+- **result**: renders the VLM verdict — severity badge, hazard type, reason,
+  per-profile passability (icon + label + color, never color alone),
+  confidence, a follow-up-question callout when `needs_better_photo` is true,
+  and a "demo cache" badge when `used_fallback` is true. "Route updated" hands
+  control back to `App.tsx` (bumps `reportsVersion`, switches to the Map tab).
 
 ## Notes on edge cases (phase 2)
 - Hazard reports snap to the nearest *edge* (`app/reports/snapping.py`); routes

@@ -22,6 +22,12 @@ export const SEVERITY_LABEL: Record<number, string> = {
   5: "Severe",
 }
 
+export const PASSABILITY_STYLE: Record<string, { bg: string; text: string; label: string; icon: string }> = {
+  passable: { bg: "bg-green-100", text: "text-green-800", label: "Passable", icon: "✅" },
+  difficult: { bg: "bg-amber-100", text: "text-amber-800", label: "Difficult", icon: "⚠️" },
+  impassable: { bg: "bg-red-100", text: "text-red-800", label: "Impassable", icon: "⛔" },
+}
+
 export const HAZARD_TYPE_LABEL: Record<string, string> = {
   crack: "Cracked surface",
   heave: "Raised/uneven slab",
