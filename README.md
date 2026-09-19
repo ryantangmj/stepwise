@@ -119,10 +119,12 @@ Open the printed local URL (default `http://localhost:5173`) with the backend
 running on `:8000` — Vite's dev server proxies `/api` and `/uploads` to it (see
 `vite.config.ts`), so no CORS setup or env var is needed in dev. Load it at a
 narrow (~390px) width or in your browser's device toolbar to see the intended
-mobile layout. The Map tab is fully functional: profile chips, tap-to-set start
-(A) and end (B), Shortest (red dashed) vs Stepwise (teal) routes, a comparison
-card, and hazard markers you can tap for the photo/AI verdict and Confirm/Gone
-buttons. The Report tab is also fully functional: take/choose a photo, confirm
+mobile layout. The Map tab is fully functional: profile chips, start (A) and
+end (B) pickers that accept either a typed address (via `/api/geocode`,
+scoped to the configured bbox) or a tap on the map, Shortest (red dashed) vs
+Stepwise (teal) routes, a comparison card listing the specific hazards on
+each route (tap one to jump the map to it), and hazard markers you can tap
+for the photo/AI verdict and Confirm/Gone buttons. The Report tab is also fully functional: take/choose a photo, confirm
 the location (drag the pin or tap the map — device geolocation prefills it
 where available), optionally add a note, submit, and see the AI verdict card
 (severity, per-profile passability, confidence, and a follow-up question if
@@ -199,6 +201,7 @@ single neighborhood to more cities.
 | `POST /api/reports/{id}/confirm` | `{"still_there": bool}` — confirm or deny                |
 | `POST /api/profile/parse`        | Parse a free-text mobility description                   |
 | `POST /api/demo/reset`           | Restore the seeded demo hazards                          |
+| `GET /api/geocode?q=`            | Address search for the start/end pickers                 |
 
 ## Roadmap
 

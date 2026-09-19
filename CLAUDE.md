@@ -11,7 +11,13 @@ Hackathon project: accessible pedestrian routing for wheelchair/walker/cane user
   cached to `backend/app/data/graph.graphml`; all routing uses custom edge-cost weights
   over that graph with NetworkX. Elevation comes from the OpenTopoData public API,
   cached to `backend/app/data/elevation_cache.json`, with graceful degradation if
-  unreachable (routes still work, just without slope penalties).
+  unreachable (routes still work, just without slope penalties). Address search for
+  the start/end pickers (`GET /api/geocode`, `app/routers/geocode.py`) proxies to the
+  public Nominatim API, scoped to the configured bbox, with the same graceful
+  degradation (empty results on failure — tap-to-place on the map always still
+  works). This is geocoding, not routing, so it doesn't conflict with the
+  no-external-routing-API rule; it's proxied server-side rather than called from the
+  browser so a real `User-Agent` can be sent per Nominatim's usage policy.
 
 ## Commands
 ```bash
@@ -106,6 +112,22 @@ npm run lint
 - No router library — `App.tsx` holds a simple `tab` state and lifts shared
   state (profile, start/end points) as props into the three screens. Fine at
   this scope; don't reach for react-router unless the app outgrows 3 screens.
+- Start/end pickers (`MapScreen.tsx: LocationField`) support both a typed
+  address (submitted on Enter/🔍, not per-keystroke — Nominatim's usage
+  policy discourages live autocomplete-style query volume) and the original
+  tap-the-map flow via a 📍 toggle that reuses the existing `pickMode` state
+  and `MapClickHandler`; picking a search result just calls the same
+  `onSelect`/`onEndChange` callback tapping the map does, so both paths
+  converge on one code path.
+- The route comparison card lists the actual hazards on each route (not just
+  a count) by resolving `RouteStats.hazards_nearby` (a list of report ids)
+  against the already-fetched `reports` array client-side — no backend
+  change needed, since `/api/routes` only returns ids. Tapping a hazard chip
+  (`MapScreen.tsx: HazardList`) calls `map.flyTo()` via a `ref` on
+  `MapContainer` and `.openPopup()` via per-marker refs stored in a
+  `Record<id, CircleMarker>`, so both this and the comparison card select
+  paths resolve to the same visible-map-marker state a user tapping it
+  directly would reach.
 - Leaflet gotchas hit and fixed in `screens/MapScreen.tsx` — worth knowing
   before touching the map:
   - **`map.invalidateSize()`**: the map mounts before the route-comparison

@@ -9,6 +9,7 @@ from app.db import SessionLocal, init_db
 from app.models import Report
 from app.routers import config as config_router
 from app.routers import demo as demo_router
+from app.routers import geocode as geocode_router
 from app.routers import profile as profile_router
 from app.routers import reports as reports_router
 from app.routers import routes as routes_router
@@ -44,6 +45,7 @@ app.include_router(routes_router.router)
 app.include_router(reports_router.router)
 app.include_router(profile_router.router)
 app.include_router(demo_router.router)
+app.include_router(geocode_router.router)
 
 
 @app.get("/api/health")

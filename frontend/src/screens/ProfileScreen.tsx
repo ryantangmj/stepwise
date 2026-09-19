@@ -116,7 +116,7 @@ export default function ProfileScreen({ profile, customProfileSummary, onProfile
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-4 p-4">
+    <div className="mx-auto h-full max-w-md space-y-4 overflow-y-auto p-4 pb-6">
       <h2 className="text-lg font-bold text-gray-900">Your mobility profile</h2>
       <p className="text-gray-600">
         Stepwise uses this to choose routes that stay comfortable for you — avoiding steps, steep hills, and known

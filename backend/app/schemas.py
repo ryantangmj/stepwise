@@ -90,6 +90,12 @@ class ConfirmRequest(BaseModel):
     still_there: bool
 
 
+class GeocodeResult(BaseModel):
+    lat: float
+    lon: float
+    display_name: str
+
+
 class ProfileParseRequest(BaseModel):
     text: str
 

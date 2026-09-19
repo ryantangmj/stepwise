@@ -63,6 +63,12 @@ export interface ProfileParseResponse {
   is_fallback: boolean
 }
 
+export interface GeocodeResult {
+  lat: number
+  lon: number
+  display_name: string
+}
+
 export interface ReportOut {
   id: string
   lat: number

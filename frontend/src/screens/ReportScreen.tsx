@@ -190,9 +190,11 @@ export default function ReportScreen({ defaultLocation, onReportSubmitted }: Pro
           </div>
 
           <div className="rounded-lg bg-gray-100 p-3">
-            <div className="font-semibold text-gray-900">{HAZARD_TYPE_LABEL[result.hazard_type] ?? result.hazard_type}</div>
-            <div className="mt-1 text-gray-700">{result.reason}</div>
-            <div className="mt-2 text-sm text-gray-500">Confidence: {Math.round(result.confidence * 100)}%</div>
+            <div className="text-base font-semibold text-gray-900">
+              {HAZARD_TYPE_LABEL[result.hazard_type] ?? result.hazard_type}
+            </div>
+            <div className="mt-1 text-sm text-gray-700">{result.reason}</div>
+            <div className="mt-2 text-xs text-gray-500">Confidence: {Math.round(result.confidence * 100)}%</div>
           </div>
 
           <div className="space-y-2">

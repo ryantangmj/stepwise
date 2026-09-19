@@ -1,10 +1,10 @@
 import L from "leaflet"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { CircleMarker, MapContainer, Marker, Pane, Polyline, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet"
-import { confirmReport, getReports, postRoutes } from "../api"
+import { confirmReport, geocodeAddress, getReports, postRoutes } from "../api"
 import { END_ICON, START_ICON } from "../mapIcons"
 import { HAZARD_TYPE_LABEL, PROFILE_PRESETS, SEVERITY_COLOR, SEVERITY_LABEL } from "../profiles"
-import type { ConfigResponse, LatLon, ProfileName, ReportOut, RouteResponse } from "../types"
+import type { ConfigResponse, GeocodeResult, LatLon, ProfileName, ReportOut, RouteResponse } from "../types"
 
 interface Props {
   config: ConfigResponse
@@ -49,6 +49,126 @@ function FitToRoute({ start, end, routeData }: { start: LatLon; end: LatLon; rou
   return null
 }
 
+function HazardList({
+  ids,
+  reportsById,
+  onSelect,
+}: {
+  ids: string[]
+  reportsById: Record<string, ReportOut>
+  onSelect: (id: string) => void
+}) {
+  if (ids.length === 0) return null
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-1">
+      {ids.map((id) => {
+        const r = reportsById[id]
+        const color = SEVERITY_COLOR[r?.severity ?? 3] ?? "#d97706"
+        return (
+          <button
+            key={id}
+            onClick={() => onSelect(id)}
+            className="flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold"
+            style={{ borderColor: color, color }}
+          >
+            <span aria-hidden>⚠</span>
+            {r ? (HAZARD_TYPE_LABEL[r.hazard_type] ?? r.hazard_type) : "Hazard"}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function LocationField({
+  label,
+  placeholder,
+  active,
+  onToggleTap,
+  onSelect,
+}: {
+  label: string
+  placeholder: string
+  active: boolean
+  onToggleTap: () => void
+  onSelect: (p: LatLon) => void
+}) {
+  const [text, setText] = useState("")
+  const [results, setResults] = useState<GeocodeResult[]>([])
+  const [searching, setSearching] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSearch() {
+    if (!text.trim()) return
+    setSearching(true)
+    setError(null)
+    setResults([])
+    try {
+      const found = await geocodeAddress(text)
+      setResults(found)
+      if (found.length === 0) setError("No matches found in this neighborhood")
+    } catch {
+      setError("Search unavailable — try tapping the map instead")
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  function pick(r: GeocodeResult) {
+    onSelect({ lat: r.lat, lon: r.lon })
+    setResults([])
+    setText(r.display_name)
+  }
+
+  return (
+    <div>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSearch()
+          }}
+          placeholder={placeholder}
+          className="tap-target min-w-0 flex-1 rounded-lg border-2 border-gray-300 px-3 text-base"
+        />
+        <button
+          onClick={handleSearch}
+          disabled={!text.trim() || searching}
+          aria-label={`Search for ${label}`}
+          className="tap-target shrink-0 rounded-lg border-2 border-gray-300 px-3 text-lg disabled:opacity-50"
+        >
+          🔍
+        </button>
+        <button
+          onClick={onToggleTap}
+          aria-label={`Tap map to set ${label}`}
+          className={`tap-target shrink-0 rounded-lg border-2 px-3 text-lg ${
+            active ? "border-teal-700 bg-teal-50" : "border-gray-300"
+          }`}
+        >
+          📍
+        </button>
+      </div>
+      {active && <p className="mt-1 text-sm text-teal-700">Tap the map to set {label}…</p>}
+      {searching && <p className="mt-1 text-sm text-gray-500">Searching…</p>}
+      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {results.length > 0 && (
+        <ul className="mt-1 max-h-40 divide-y divide-gray-200 overflow-y-auto rounded-lg border-2 border-gray-300 bg-white">
+          {results.map((r, i) => (
+            <li key={i}>
+              <button onClick={() => pick(r)} className="tap-target w-full px-3 text-left text-sm">
+                {r.display_name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 function formatDistance(m: number): string {
   return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`
 }
@@ -85,6 +205,14 @@ export default function MapScreen({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reports, setReports] = useState<ReportOut[]>([])
+  const mapRef = useRef<L.Map | null>(null)
+  const markerRefs = useRef<Record<string, L.CircleMarker>>({})
+
+  const reportsById = useMemo(() => {
+    const byId: Record<string, ReportOut> = {}
+    for (const r of reports) byId[r.id] = r
+    return byId
+  }, [reports])
 
   const center = useMemo<[number, number]>(
     () => [(config.bbox.north + config.bbox.south) / 2, (config.bbox.east + config.bbox.west) / 2],
@@ -144,14 +272,24 @@ export default function MapScreen({
     onReportsChanged()
   }
 
+  // hazards_nearby is just a list of report ids (see RouteStats.hazards_nearby
+  // in schemas.py) — resolve against the already-fetched reports list rather
+  // than adding a backend round-trip.
+  function focusHazard(id: string) {
+    const r = reportsById[id]
+    if (!r || !mapRef.current) return
+    mapRef.current.flyTo([r.lat, r.lon], 18)
+    markerRefs.current[id]?.openPopup()
+  }
+
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-wrap gap-2 border-b border-gray-200 bg-white px-3 py-2">
+      <div className="flex flex-wrap gap-1.5 border-b border-gray-200 bg-white px-3 py-1.5">
         {PROFILE_PRESETS.map((p) => (
           <button
             key={p.name}
             onClick={() => onProfileChange(p.name)}
-            className={`tap-target flex items-center gap-1.5 whitespace-nowrap rounded-full border-2 px-4 text-base font-semibold ${
+            className={`tap-target flex items-center gap-1 whitespace-nowrap rounded-full border-2 px-3 text-sm font-semibold ${
               profile === p.name
                 ? "border-teal-700 bg-teal-700 text-white"
                 : "border-gray-300 bg-white text-gray-700"
@@ -162,34 +300,38 @@ export default function MapScreen({
           </button>
         ))}
         {profile === "custom" && (
-          <span className="tap-target flex items-center gap-1.5 whitespace-nowrap rounded-full border-2 border-teal-700 bg-teal-700 px-4 text-base font-semibold text-white">
+          <span className="tap-target flex items-center gap-1 whitespace-nowrap rounded-full border-2 border-teal-700 bg-teal-700 px-3 text-sm font-semibold text-white">
             <span aria-hidden>✨</span>
             Custom
           </span>
         )}
       </div>
 
-      <div className="flex gap-2 bg-white px-3 pb-2">
-        <button
-          onClick={() => setPickMode(pickMode === "start" ? null : "start")}
-          className={`tap-target flex-1 rounded-lg border-2 text-base font-semibold ${
-            pickMode === "start" ? "border-teal-700 bg-teal-50 text-teal-800" : "border-gray-300 text-gray-700"
-          }`}
-        >
-          {pickMode === "start" ? "Tap map to set start…" : "📍 Set start (A)"}
-        </button>
-        <button
-          onClick={() => setPickMode(pickMode === "end" ? null : "end")}
-          className={`tap-target flex-1 rounded-lg border-2 text-base font-semibold ${
-            pickMode === "end" ? "border-blue-700 bg-blue-50 text-blue-800" : "border-gray-300 text-gray-700"
-          }`}
-        >
-          {pickMode === "end" ? "Tap map to set end…" : "🏁 Set end (B)"}
-        </button>
+      <div className="space-y-2 bg-white px-3 pb-2">
+        <LocationField
+          label="start (A)"
+          placeholder="Search address for start (A)…"
+          active={pickMode === "start"}
+          onToggleTap={() => setPickMode(pickMode === "start" ? null : "start")}
+          onSelect={(p) => {
+            onStartChange(p)
+            setPickMode(null)
+          }}
+        />
+        <LocationField
+          label="end (B)"
+          placeholder="Search address for end (B)…"
+          active={pickMode === "end"}
+          onToggleTap={() => setPickMode(pickMode === "end" ? null : "end")}
+          onSelect={(p) => {
+            onEndChange(p)
+            setPickMode(null)
+          }}
+        />
       </div>
 
       <div className="relative min-h-0 flex-1">
-        <MapContainer center={center} zoom={16} maxBounds={bounds} className="h-full w-full">
+        <MapContainer ref={mapRef} center={center} zoom={16} maxBounds={bounds} className="h-full w-full">
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -217,6 +359,9 @@ export default function MapScreen({
             {reports.map((r) => (
               <CircleMarker
                 key={r.id}
+                ref={(m) => {
+                  if (m) markerRefs.current[r.id] = m
+                }}
                 center={[r.lat, r.lon]}
                 radius={10}
                 pathOptions={{
@@ -276,6 +421,7 @@ export default function MapScreen({
                     ? `⚠ ${routeData.shortest.hazards_nearby.length} hazard(s)`
                     : "No known hazards"}
                 </div>
+                <HazardList ids={routeData.shortest.hazards_nearby} reportsById={reportsById} onSelect={focusHazard} />
               </div>
               <div className="rounded-lg border-2 border-teal-700 bg-teal-50 p-3">
                 <div className="text-sm font-semibold text-teal-800">Stepwise</div>
@@ -286,6 +432,7 @@ export default function MapScreen({
                     ? `⚠ ${routeData.stepwise.hazards_nearby.length} hazard(s)`
                     : "No known hazards"}
                 </div>
+                <HazardList ids={routeData.stepwise.hazards_nearby} reportsById={reportsById} onSelect={focusHazard} />
               </div>
             </div>
 

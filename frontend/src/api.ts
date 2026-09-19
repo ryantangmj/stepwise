@@ -1,4 +1,4 @@
-import type { ConfigResponse, ProfileName, ProfileParseResponse, ReportOut, RouteResponse } from "./types"
+import type { ConfigResponse, GeocodeResult, ProfileName, ProfileParseResponse, ReportOut, RouteResponse } from "./types"
 
 async function handle<T>(resp: Response): Promise<T> {
   if (!resp.ok) {
@@ -57,6 +57,10 @@ export function confirmReport(id: string, stillThere: boolean): Promise<ReportOu
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ still_there: stillThere }),
   }).then((r) => handle<ReportOut>(r))
+}
+
+export function geocodeAddress(query: string): Promise<GeocodeResult[]> {
+  return fetch(`/api/geocode?q=${encodeURIComponent(query)}`).then((r) => handle<GeocodeResult[]>(r))
 }
 
 export function parseProfile(text: string): Promise<ProfileParseResponse> {
