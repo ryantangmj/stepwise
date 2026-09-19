@@ -53,8 +53,21 @@ npm run dev
 
 ## Phases (see README for detailed status)
 1. Backend skeleton, graph download/cache, elevation, profile-aware routing — DONE
-2. Reports storage, snapping, hazard penalties, decay, VLM analysis endpoint
+2. Reports storage, snapping, hazard penalties, decay, VLM analysis endpoint — DONE
+   (route explanations via `app/llm.py` also landed here, ahead of phase 5)
 3. Frontend map, route comparison, hazard markers, profile selector
 4. Report flow (camera, location confirm, VLM result card, reroute)
-5. Natural-language profile parsing, route explanations, voice input
+5. Natural-language profile parsing (`/api/profile/parse`), voice input
 6. Seed script, reset endpoint, README polish, UI polish
+
+## Notes on edge cases (phase 2)
+- Hazard reports snap to the nearest *edge* (`app/reports/snapping.py`); routes
+  are built from nearest *node* to nearest *node*. At an intersection with
+  several edges meeting at almost the same point, a hazard reported right at
+  the junction can snap to a different edge than the one the route actually
+  traverses through that node. This only matters within a few meters of a
+  junction — a hazard reported mid-block (the realistic case, and what the
+  demo script places) snaps unambiguously to the edge the route uses.
+- `snapped_edge_id` is a canonical *undirected* `"u_v_k"` id
+  (`app/graph/edge_ids.py: canonical_edge_id`) so a hazard blocks a segment in
+  both directions regardless of which directed edge nearest_edges/routing picked.

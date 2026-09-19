@@ -11,6 +11,7 @@ import osmnx as ox
 
 from app import config
 from app.graph.build_graph import build_or_load_graph
+from app.graph.edge_ids import canonical_edge_id
 from app.graph.elevation import attach_elevation
 from app.graph.profiles import MobilityProfile
 from app.graph.weights import _edge_grade, _first, edge_cost, shortest_distance_cost
@@ -98,7 +99,7 @@ def _build_route_result(
             is_fully_accessible = False
             continue
         distance += data.get("length", 0.0) or 0.0
-        edge_ids.append(f"{u}_{v}_{k}")
+        edge_ids.append(canonical_edge_id(u, v, k))
         grade = _edge_grade(data)
         if grade is not None:
             max_grade = grade if max_grade is None else max(max_grade, grade)

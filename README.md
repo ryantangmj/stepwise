@@ -6,11 +6,13 @@ Optimizes for comfortable/safe routes instead of shortest distance, and lets the
 community report sidewalk hazards by photo; a vision-language model assesses each
 photo and updates the map. Scoped to one Pittsburgh neighborhood (default: Oakland).
 
-**Status: Phase 1 of 6 complete** — backend skeleton, OSM pedestrian graph
-download/caching, elevation-based slope penalties (with graceful fallback), and
-profile-aware routing that returns a Shortest route and a distinct Stepwise route.
+**Status: Phase 2 of 6 complete** — backend skeleton, OSM pedestrian graph
+download/caching, elevation-based slope penalties (with graceful fallback),
+profile-aware routing, hazard reports (photo upload, VLM analysis, snapping,
+confirm/deny lifecycle, confidence decay), and hazard-aware Stepwise rerouting
+with an AI-generated (or templated, in demo mode) plain-language explanation.
 
-## Setup (Phase 1)
+## Setup
 
 Backend requires Python 3.12 (pinned via `uv`) because OSMnx's geospatial
 dependencies (geopandas/shapely/scipy) don't yet ship wheels for newer Pythons.
@@ -37,28 +39,43 @@ cd backend
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
-## Verify Phase 1
+## Verify
 
 ```bash
 cd backend
-uv run python -m pytest tests/test_routing.py -v -s
+uv run python -m pytest tests/ -v -s
 ```
 
-This asserts the Shortest and Stepwise routes differ for the wheelchair profile on
-the demo start/end pair, and prints both routes' distance/time/max grade. With the
-default Oakland bbox and demo coordinates, the Shortest route crosses a ~24% grade
-street (Pittsburgh hills) while the Stepwise route detours to stay under 8%.
+`test_routing.py` asserts the Shortest and Stepwise routes differ for the wheelchair
+profile on the demo start/end pair — with the default Oakland bbox, Shortest crosses
+a ~24% grade street (Pittsburgh hills) while Stepwise detours to stay under 8%.
+`test_reports.py` submits a hazard photo mid-block on the Shortest route and asserts
+Stepwise reroutes around it, then exercises confirm/deny (2 denials auto-resolves).
 
-With the server running, you can also hit the API directly:
+With the server running, you can also exercise the API by hand:
 
 ```bash
 curl localhost:8000/api/config
+
+# Submit a hazard report (works with no OPENAI_API_KEY when DEMO_MODE=true —
+# falls back to a cached/default VLM response)
+curl -X POST localhost:8000/api/reports \
+  -F "photo=@/path/to/photo.jpg" -F "lat=40.4410" -F "lon=-79.9563"
+
+curl localhost:8000/api/reports
+
+curl -X POST localhost:8000/api/reports/<id>/confirm -H 'Content-Type: application/json' \
+  -d '{"still_there": true}'
+
 curl -X POST localhost:8000/api/routes -H 'Content-Type: application/json' -d '{
   "start_lat": 40.4406, "start_lon": -79.9563,
   "end_lat": 40.4443, "end_lon": -79.9553,
   "profile": "wheelchair"
 }'
 ```
+
+Note: the SQLite db (`backend/stepwise.db`) and uploaded photos are gitignored and
+created fresh on first run — there's no seed data yet (that's phase 6).
 
 ## Configuration
 
@@ -91,7 +108,7 @@ single neighborhood to more cities.
 ## Roadmap
 
 1. ✅ Backend skeleton, graph download/cache, elevation, profile-aware routing
-2. Reports storage, snapping, hazard penalties, decay, VLM analysis endpoint
+2. ✅ Reports storage, snapping, hazard penalties, decay, VLM analysis endpoint
 3. Frontend map, route comparison, hazard markers, profile selector
 4. Report flow (camera, location confirm, VLM result card, reroute)
 5. Natural-language profile parsing, route explanations, voice input
