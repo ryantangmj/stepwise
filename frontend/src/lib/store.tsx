@@ -40,11 +40,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setConfig(cfg);
       if(cfg.demo_start) {
         setStart(cfg.demo_start);
-        setStartName("Demo Start");
+        setStartName("Ophelia Street, Pittsburgh");
       }
       if(cfg.demo_end) {
         setEnd(cfg.demo_end);
-        setEndName("Demo End");
+        setEndName("Hamburg Hall, Pittsburgh");
       }
     });
   }, []);

@@ -4,9 +4,9 @@ const mockDelay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 export async function getConfig(): Promise<ConfigResponse> {
   return {
-    bbox: { north: 40.80, south: 40.70, east: -73.90, west: -74.00 },
-    demo_start: { lat: 40.75, lon: -73.95 },
-    demo_end: { lat: 40.76, lon: -73.94 },
+    bbox: { north: 40.455, south: 40.425, east: -79.935, west: -79.975 },
+    demo_start: { lat: 40.4345455, lon: -79.9618173 },
+    demo_end: { lat: 40.4441762, lon: -79.9455511 },
     demo_mode: true
   };
 }
@@ -17,15 +17,30 @@ export async function postRoutes(params: {
 }): Promise<RouteResponse> {
   await mockDelay(350);
   const { start_lat, start_lon, end_lat, end_lon } = params;
+  const latDelta = end_lat - start_lat;
+  const lonDelta = end_lon - start_lon;
+  const directDistance = haversineDistanceM(start_lat, start_lon, end_lat, end_lon);
+  const hazardLat = start_lat + (end_lat - start_lat) * 0.55;
+  const hazardLon = start_lon + (end_lon - start_lon) * 0.55;
+  const routeHazard = mockReports.find(report => report.id === "r1");
+  if (routeHazard) {
+    routeHazard.lat = hazardLat;
+    routeHazard.lon = hazardLon;
+  }
   return {
     shortest: {
-      kind: "shortest", distance_m: 1200, time_s: 900, max_grade: 8, is_fully_accessible: false, step_count: 5,
-      coordinates: [[start_lat, start_lon], [start_lat + 0.005, start_lon + 0.005], [end_lat, end_lon]], 
+      kind: "shortest", distance_m: directDistance, time_s: directDistance / 1.2, max_grade: 8, is_fully_accessible: false, step_count: 5,
+      coordinates: [[start_lat, start_lon], [hazardLat, hazardLon], [end_lat, end_lon]],
       hazards_nearby: ["r1"]
     },
     stepwise: {
-      kind: "stepwise", distance_m: 1400, time_s: 1050, max_grade: 4, is_fully_accessible: true, step_count: 0,
-      coordinates: [[start_lat, start_lon], [start_lat + 0.002, start_lon - 0.005], [start_lat + 0.008, start_lon], [end_lat, end_lon]], 
+      kind: "stepwise", distance_m: directDistance * 1.16, time_s: (directDistance * 1.16) / 1.15, max_grade: 4, is_fully_accessible: true, step_count: 0,
+      coordinates: [
+        [start_lat, start_lon],
+        [start_lat + latDelta * 0.32 + lonDelta * 0.12, start_lon + lonDelta * 0.32 - latDelta * 0.12],
+        [start_lat + latDelta * 0.7 + lonDelta * 0.12, start_lon + lonDelta * 0.7 - latDelta * 0.12],
+        [end_lat, end_lon]
+      ],
       hazards_nearby: []
     },
     explanation: "Stepwise avoided a steep ramp and a set of stairs on the shortest route. It's slightly longer but keeps the grade below your comfortable limit.",
@@ -35,7 +50,7 @@ export async function postRoutes(params: {
 
 let mockReports: ReportOut[] = [
   {
-    id: "r1", lat: 40.755, lon: -73.945, 
+    id: "r1", lat: 40.4398424, lon: -79.9528709, 
     photo_url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' fill='%23e5e7eb'%3E%3Crect width='100%25' height='100%25'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='20' fill='%239ca3af'%3EHazard%3C/text%3E%3C/svg%3E",
     hazard_type: "steep_ramp", severity: 4, passability: { wheelchair: "difficult", walker: "passable", cane: "passable" },
     confidence: 0.9, estimated_level_change_cm: 10, needs_better_photo: false, follow_up_question: null, reason: "Detected a curb cut that exceeds ADA grade guidelines.",
@@ -108,10 +123,10 @@ export async function geocodeAddress(query: string): Promise<GeocodeResult[]> {
   // Graceful fallback
   const lower = query.toLowerCase();
   const fallbacks: GeocodeResult[] = [
-    { lat: 40.75, lon: -73.95, display_name: "Central Park, New York" },
-    { lat: 40.755, lon: -73.945, display_name: "City Hall Station" },
-    { lat: 40.76, lon: -73.94, display_name: "Grand Central Terminal" },
-    { lat: 40.74, lon: -73.96, display_name: "Public Library" }
+    { lat: 40.4345455, lon: -79.9618173, display_name: "Ophelia Street — Pittsburgh, Pennsylvania" },
+    { lat: 40.4441762, lon: -79.9455511, display_name: "Hamburg Hall — Pittsburgh, Pennsylvania" },
+    { lat: 40.4433266, lon: -79.9435839, display_name: "Carnegie Mellon University — Pittsburgh, Pennsylvania" },
+    { lat: 40.4406248, lon: -79.9958864, display_name: "Downtown Pittsburgh — Pittsburgh, Pennsylvania" }
   ];
   const matched = fallbacks.filter(f => f.display_name.toLowerCase().includes(lower));
   return matched.length ? matched : fallbacks; 

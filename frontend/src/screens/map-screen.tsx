@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { postRoutes, getReports, confirmReport } from '@/lib/api';
-import { RouteResponse, ReportOut } from '@/lib/types';
+import { RouteResponse, ReportOut, LatLon } from '@/lib/types';
 import { MapView } from '@/components/map-view';
 import { AddressAutocomplete } from '@/components/address-autocomplete';
 import { PROFILE_PRESETS, SEVERITY_COLOR, SEVERITY_LABEL, HAZARD_TYPE_LABEL } from '@/lib/profiles';
@@ -14,6 +14,7 @@ export default function MapScreen() {
   const [loading, setLoading] = useState(false);
   const [reports, setReports] = useState<ReportOut[]>([]);
   const [activeHazardId, setActiveHazardId] = useState<string | null>(null);
+  const [focusLocation, setFocusLocation] = useState<LatLon | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,7 +31,12 @@ export default function MapScreen() {
       end_lat: end.lat, end_lon: end.lon,
       profile, custom_profile_id: customProfileId
     }).then(res => {
-      if(!cancelled) setRouteData(res);
+      if(!cancelled) {
+        setRouteData(res);
+        getReports().then(nextReports => {
+          if (!cancelled) setReports(nextReports);
+        });
+      }
     }).finally(() => {
       if(!cancelled) setLoading(false);
     });
@@ -45,11 +51,14 @@ export default function MapScreen() {
     <div className="flex flex-col md:flex-row h-full w-full bg-background overflow-hidden">
       
       {/* Map (Top on Mobile, Right on Desktop) */}
-      <div className="h-[30vh] min-h-[180px] md:min-h-[auto] md:h-full md:flex-1 relative order-1 md:order-2 bg-muted/20 shrink-0 z-0 transition-all duration-300">
+      <div className="h-[28vh] min-h-[175px] md:min-h-[auto] md:h-full md:flex-1 relative order-1 md:order-2 bg-muted/20 shrink-0 z-0 transition-all duration-300">
         <MapView 
           bbox={config.bbox} start={start} end={end} routeData={routeData} reports={reports}
+          focusLocation={focusLocation}
           pickMode={pickMode} 
           onMapClick={(p) => {
+            setRouteData(null);
+            setFocusLocation(p);
             if (pickMode === 'start') { setStart(p); setStartName("Map Location"); setPickMode(null); }
             else if (pickMode === 'end') { setEnd(p); setEndName("Map Location"); setPickMode(null); }
           }}
@@ -59,7 +68,7 @@ export default function MapScreen() {
       </div>
 
       {/* Panel / Sheet (Bottom on Mobile, Left on Desktop) */}
-      <div className="flex-1 md:w-96 lg:w-[480px] shrink-0 bg-card md:border-r flex flex-col z-10 shadow-[0_-12px_40px_-10px_rgba(0,0,0,0.15)] md:shadow-2xl overflow-hidden order-2 md:order-1 relative rounded-t-[2rem] md:rounded-none -mt-6 md:mt-0">
+      <div className="flex-1 min-h-0 md:w-96 lg:w-[480px] shrink-0 bg-card md:border-r flex flex-col z-10 shadow-[0_-12px_40px_-10px_rgba(0,0,0,0.15)] md:shadow-2xl overflow-hidden order-2 md:order-1 relative rounded-t-[2rem] md:rounded-none -mt-6 md:mt-0">
         
         {/* Mobile drag handle */}
         <div className="md:hidden flex justify-center pt-3 pb-1 shrink-0 bg-card">
@@ -95,20 +104,32 @@ export default function MapScreen() {
         <div className="p-4 md:p-5 space-y-3 shrink-0 border-b relative z-20 bg-card shadow-sm">
           <AddressAutocomplete 
             label="start" placeholder="Where are you starting?" value={startName} 
-            onSelect={(p, n) => { setStart(p); setStartName(n); setPickMode(null); }}
+            onSelect={(p, n) => {
+              setRouteData(null);
+              setFocusLocation(p);
+              setStart(p);
+              setStartName(n);
+              setPickMode(null);
+            }}
             active={pickMode === 'start'} onToggleActive={() => setPickMode(p => p === 'start' ? null : 'start')}
             icon={<Target size={20} className="text-green-600" />}
           />
           <AddressAutocomplete 
             label="destination" placeholder="Where do you want to go?" value={endName} 
-            onSelect={(p, n) => { setEnd(p); setEndName(n); setPickMode(null); }}
+            onSelect={(p, n) => {
+              setRouteData(null);
+              setFocusLocation(p);
+              setEnd(p);
+              setEndName(n);
+              setPickMode(null);
+            }}
             active={pickMode === 'end'} onToggleActive={() => setPickMode(p => p === 'end' ? null : 'end')}
             icon={<Navigation size={20} className="text-destructive" />}
           />
         </div>
 
         {/* Results Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-5 bg-muted/10 relative z-10 pb-8">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 md:p-5 bg-muted/10 relative z-10 pb-12">
           {loading && (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground animate-in fade-in">
                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"/>
@@ -154,8 +175,41 @@ export default function MapScreen() {
                  </div>
                  <div className="flex items-center gap-6 text-sm font-medium">
                    <div className="flex items-center gap-2 text-muted-foreground"><Clock size={16} /> {Math.round(routeData.shortest.time_s / 60)} min</div>
-                   <div className="flex items-center gap-2 text-muted-foreground"><Activity size={16} /> {routeData.shortest.hazards_nearby.length} hazards</div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Activity size={16} />
+                      {routeData.shortest.hazards_nearby.length} {routeData.shortest.hazards_nearby.length === 1 ? 'hazard' : 'hazards'}
+                    </div>
                  </div>
+                  {routeData.shortest.hazards_nearby.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Hazards on this route</p>
+                      {routeData.shortest.hazards_nearby.map((id) => {
+                        const hazard = reports.find((report) => report.id === id);
+                        if (!hazard) return null;
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => setActiveHazardId(id)}
+                            className="flex min-h-[44px] w-full items-center gap-3 rounded-xl border bg-muted/40 px-3 py-2 text-left transition-colors hover:bg-muted"
+                          >
+                            <span
+                              className="h-3 w-3 shrink-0 rounded-full ring-2 ring-white"
+                              style={{ background: SEVERITY_COLOR[hazard.severity] }}
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-bold text-foreground">
+                                {HAZARD_TYPE_LABEL[hazard.hazard_type] || hazard.hazard_type}
+                              </span>
+                              <span className="block truncate text-xs font-medium text-muted-foreground">
+                                {SEVERITY_LABEL[hazard.severity] || `Severity ${hazard.severity}`} · Tap to view details
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                </div>
              </div>
           )}
