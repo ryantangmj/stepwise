@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.python-version
+
+# osmnx raw Overpass response cache (redundant with app/data/graph.graphml)
+backend/cache/
+
+# Secrets
+.env
+
+# SQLite + uploaded photos (seeded via scripts/seed_demo.py, not committed)
+backend/stepwise.db
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS
+.DS_Store
