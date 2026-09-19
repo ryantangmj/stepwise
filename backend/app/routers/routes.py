@@ -6,6 +6,7 @@ from app.graph.profiles import PRESET_PROFILES
 from app.graph.routing import RouteResult, compute_routes
 from app.llm import generate_route_explanation
 from app.reports.hazards import build_hazard_penalty_fn, hazards_on_edges
+from app.routers.profile import get_custom_profile
 from app.schemas import RouteRequest, RouteResponse, RouteStats
 
 router = APIRouter()
@@ -27,10 +28,13 @@ def _to_stats(result: RouteResult, db: Session) -> RouteStats:
 @router.post("/api/routes", response_model=RouteResponse)
 def post_routes(req: RouteRequest, db: Session = Depends(get_db)) -> RouteResponse:
     if req.profile == "custom":
-        # Wired up once /api/profile/parse (phase 5) can produce a stored custom profile.
-        raise HTTPException(400, "Custom profiles are not yet supported")
-
-    profile = PRESET_PROFILES[req.profile]
+        if not req.custom_profile_id:
+            raise HTTPException(400, "custom_profile_id is required when profile is 'custom'")
+        profile = get_custom_profile(req.custom_profile_id)
+        if profile is None:
+            raise HTTPException(404, "That custom profile has expired — please describe your needs again")
+    else:
+        profile = PRESET_PROFILES[req.profile]
     hazard_penalty_fn = build_hazard_penalty_fn(db, profile)
     shortest, stepwise = compute_routes(
         req.start_lat, req.start_lon, req.end_lat, req.end_lon, profile, hazard_penalty_fn

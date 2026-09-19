@@ -9,6 +9,7 @@ import type { ConfigResponse, LatLon, ProfileName, ReportOut, RouteResponse } fr
 interface Props {
   config: ConfigResponse
   profile: ProfileName
+  customProfileId: string | null
   onProfileChange: (p: ProfileName) => void
   start: LatLon
   end: LatLon
@@ -70,6 +71,7 @@ function timeAgo(iso: string): string {
 export default function MapScreen({
   config,
   profile,
+  customProfileId,
   onProfileChange,
   start,
   end,
@@ -101,10 +103,18 @@ export default function MapScreen({
   }, [reportsVersion])
 
   useEffect(() => {
+    if (profile === "custom" && !customProfileId) return
     let cancelled = false
     setLoading(true)
     setError(null)
-    postRoutes({ start_lat: start.lat, start_lon: start.lon, end_lat: end.lat, end_lon: end.lon, profile })
+    postRoutes({
+      start_lat: start.lat,
+      start_lon: start.lon,
+      end_lat: end.lat,
+      end_lon: end.lon,
+      profile,
+      custom_profile_id: customProfileId,
+    })
       .then((data) => {
         if (!cancelled) setRouteData(data)
       })
@@ -117,7 +127,7 @@ export default function MapScreen({
     return () => {
       cancelled = true
     }
-  }, [start, end, profile, reportsVersion])
+  }, [start, end, profile, customProfileId, reportsVersion])
 
   function handleMapClick(p: LatLon) {
     if (pickMode === "start") {
@@ -136,7 +146,7 @@ export default function MapScreen({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex gap-2 overflow-x-auto border-b border-gray-200 bg-white px-3 py-2">
+      <div className="flex flex-wrap gap-2 border-b border-gray-200 bg-white px-3 py-2">
         {PROFILE_PRESETS.map((p) => (
           <button
             key={p.name}
@@ -151,6 +161,12 @@ export default function MapScreen({
             {p.label}
           </button>
         ))}
+        {profile === "custom" && (
+          <span className="tap-target flex items-center gap-1.5 whitespace-nowrap rounded-full border-2 border-teal-700 bg-teal-700 px-4 text-base font-semibold text-white">
+            <span aria-hidden>✨</span>
+            Custom
+          </span>
+        )}
       </div>
 
       <div className="flex gap-2 bg-white px-3 pb-2">

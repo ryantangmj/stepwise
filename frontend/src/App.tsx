@@ -17,9 +17,25 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("map")
   const [config, setConfig] = useState<ConfigResponse | null>(null)
   const [profile, setProfile] = useState<ProfileName>("wheelchair")
+  const [customProfileId, setCustomProfileId] = useState<string | null>(null)
+  const [customProfileSummary, setCustomProfileSummary] = useState<string | null>(null)
   const [start, setStart] = useState<LatLon | null>(null)
   const [end, setEnd] = useState<LatLon | null>(null)
   const [reportsVersion, setReportsVersion] = useState(0)
+
+  function handlePresetProfileChange(p: ProfileName) {
+    setProfile(p)
+    if (p !== "custom") {
+      setCustomProfileId(null)
+      setCustomProfileSummary(null)
+    }
+  }
+
+  function handleCustomProfileParsed(profileId: string, summary: string) {
+    setCustomProfileId(profileId)
+    setCustomProfileSummary(summary)
+    setProfile("custom")
+  }
 
   useEffect(() => {
     getConfig().then((cfg) => {
@@ -49,7 +65,8 @@ export default function App() {
           <MapScreen
             config={config}
             profile={profile}
-            onProfileChange={setProfile}
+            customProfileId={customProfileId}
+            onProfileChange={handlePresetProfileChange}
             start={start}
             end={end}
             onStartChange={setStart}
@@ -66,7 +83,12 @@ export default function App() {
             }}
           />
         ) : (
-          <ProfileScreen profile={profile} onProfileChange={setProfile} />
+          <ProfileScreen
+            profile={profile}
+            customProfileSummary={profile === "custom" ? customProfileSummary : null}
+            onProfileChange={handlePresetProfileChange}
+            onCustomProfileParsed={handleCustomProfileParsed}
+          />
         )}
       </main>
 

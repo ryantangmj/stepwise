@@ -50,6 +50,19 @@ export interface Passability {
   cane: PassabilityLevel
 }
 
+export interface ProfileParseResponse {
+  profile_id: string
+  base_profile: "wheelchair" | "walker" | "cane"
+  max_comfortable_grade: number | null
+  hard_max_grade: number | null
+  max_continuous_walk_m: number | null
+  avoid_uncontrolled_crossings: boolean
+  prefer_rest_points: boolean
+  notes: string
+  summary: string
+  is_fallback: boolean
+}
+
 export interface ReportOut {
   id: string
   lat: number

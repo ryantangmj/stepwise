@@ -6,11 +6,11 @@ Optimizes for comfortable/safe routes instead of shortest distance, and lets the
 community report sidewalk hazards by photo; a vision-language model assesses each
 photo and updates the map. Scoped to one Pittsburgh neighborhood (default: Oakland).
 
-**Status: Phase 4 of 6 complete** — full backend (routing, hazard reports, VLM
-analysis, decay) plus a mobile-first React/Leaflet frontend: map with route
-comparison and hazard markers, and a full report flow (camera capture,
-location confirm with a draggable pin, AI verdict card, reroute). The Profile
-screen is still a stub (phase 5, natural-language profile parsing).
+**Status: Phase 5 of 6 complete** — full backend and frontend core loop: map
+with route comparison and hazard markers, a full report flow (camera capture,
+location confirm, AI verdict card, reroute), and natural-language mobility
+profiles (free text or voice input, parsed by the LLM, confirmed in plain
+language before use). Phase 6 (seed data, demo reset, polish) is what's left.
 
 ## Setup
 
@@ -97,7 +97,10 @@ the location (drag the pin or tap the map — device geolocation prefills it
 where available), optionally add a note, submit, and see the AI verdict card
 (severity, per-profile passability, confidence, and a follow-up question if
 the photo needs more detail) before returning to the map with the new hazard
-in place. The Profile tab is a placeholder until phase 5.
+in place. The Profile tab lets you pick a preset or describe your needs in
+your own words (typed or, on supporting browsers, spoken via a mic button) —
+the AI-parsed profile is shown back in plain language for you to confirm
+before it's used for routing.
 
 ## Configuration
 
@@ -116,7 +119,15 @@ All configuration lives in `backend/.env` (see `.env.example`). Key variables:
 ## Mobility profiles
 
 Defined as data in `backend/app/graph/profiles.py`: `wheelchair`, `walker`, `cane`,
-and `custom` (built from free text via `/api/profile/parse`, added in a later phase).
+and `custom` (built from free text via `/api/profile/parse`):
+
+```bash
+curl -X POST localhost:8000/api/profile/parse -H 'Content-Type: application/json' -d '{
+  "text": "I use a rollator, get tired after about 200 meters, and hate crossing busy roads"
+}'
+# -> {"profile_id": "...", "summary": "...", ...} — pass profile_id back as
+# custom_profile_id in /api/routes with "profile": "custom"
+```
 
 ## Non-goals
 
@@ -133,5 +144,5 @@ single neighborhood to more cities.
 2. ✅ Reports storage, snapping, hazard penalties, decay, VLM analysis endpoint
 3. ✅ Frontend map, route comparison, hazard markers, profile selector
 4. ✅ Report flow (camera, location confirm, VLM result card, reroute)
-5. Natural-language profile parsing, route explanations, voice input
+5. ✅ Natural-language profile parsing, route explanations, voice input
 6. Seed script, reset endpoint, UI polish

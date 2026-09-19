@@ -60,8 +60,24 @@ npm run lint
 3. Frontend map, route comparison, hazard markers, profile selector — DONE
    (Profile screen is still a stub pending phase 5)
 4. Report flow (camera, location confirm, VLM result card, reroute) — DONE
-5. Natural-language profile parsing (`/api/profile/parse`), voice input
+5. Natural-language profile parsing, voice input — DONE
 6. Seed script, reset endpoint, README polish, UI polish
+
+## Custom profiles (phase 5)
+- `POST /api/profile/parse` (`app/routers/profile.py`) calls `llm.parse_profile_text`,
+  builds a `MobilityProfile` via `profiles.custom_profile_from_fields`, and
+  stores it in an **in-memory** `dict[profile_id, MobilityProfile]` — no DB
+  table, since there are no user accounts to persist it against. A server
+  restart loses custom profiles; that's fine here, the user just re-describes
+  their needs. `POST /api/routes` looks the profile up by `custom_profile_id`
+  when `profile == "custom"` and 404s with a friendly message if it's gone.
+- Frontend: `ProfileScreen` posts free text (+ optional Web Speech API voice
+  input, feature-detected — the mic button simply doesn't render without
+  browser support) to `/api/profile/parse`, shows the returned plain-language
+  `summary` for confirmation, and only switches the active profile to
+  `"custom"` once the user taps "Looks right." `App.tsx` holds
+  `customProfileId`/`customProfileSummary` alongside `profile` and clears
+  them whenever a preset chip is tapped instead.
 
 ## Frontend notes (phase 3)
 - No router library — `App.tsx` holds a simple `tab` state and lifts shared

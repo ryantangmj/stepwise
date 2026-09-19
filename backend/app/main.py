@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from app import config
 from app.db import init_db
 from app.routers import config as config_router
+from app.routers import profile as profile_router
 from app.routers import reports as reports_router
 from app.routers import routes as routes_router
 
@@ -28,6 +29,7 @@ app.mount("/uploads", StaticFiles(directory=config.UPLOADS_DIR), name="uploads")
 app.include_router(config_router.router)
 app.include_router(routes_router.router)
 app.include_router(reports_router.router)
+app.include_router(profile_router.router)
 
 
 @app.get("/api/health")

@@ -1,4 +1,4 @@
-import type { ConfigResponse, ProfileName, ReportOut, RouteResponse } from "./types"
+import type { ConfigResponse, ProfileName, ProfileParseResponse, ReportOut, RouteResponse } from "./types"
 
 async function handle<T>(resp: Response): Promise<T> {
   if (!resp.ok) {
@@ -24,6 +24,7 @@ export function postRoutes(params: {
   end_lat: number
   end_lon: number
   profile: ProfileName
+  custom_profile_id?: string | null
 }): Promise<RouteResponse> {
   return fetch("/api/routes", {
     method: "POST",
@@ -56,4 +57,12 @@ export function confirmReport(id: string, stillThere: boolean): Promise<ReportOu
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ still_there: stillThere }),
   }).then((r) => handle<ReportOut>(r))
+}
+
+export function parseProfile(text: string): Promise<ProfileParseResponse> {
+  return fetch("/api/profile/parse", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  }).then((r) => handle<ProfileParseResponse>(r))
 }

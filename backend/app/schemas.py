@@ -95,6 +95,7 @@ class ProfileParseRequest(BaseModel):
 
 
 class ProfileParseResponse(BaseModel):
+    profile_id: str
     base_profile: Literal["wheelchair", "walker", "cane"]
     max_comfortable_grade: float | None
     hard_max_grade: float | None
