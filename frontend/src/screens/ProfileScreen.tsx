@@ -47,6 +47,10 @@ function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null
 }
 
+// Browser support doesn't change during a session, so this is computed once
+// at module load rather than read from a ref during render.
+const SPEECH_SUPPORTED = getSpeechRecognition() !== null
+
 export default function ProfileScreen({ profile, customProfileSummary, onProfileChange, onCustomProfileParsed }: Props) {
   const [text, setText] = useState("")
   const [listening, setListening] = useState(false)
@@ -56,7 +60,6 @@ export default function ProfileScreen({ profile, customProfileSummary, onProfile
     null,
   )
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
-  const speechSupported = useRef(getSpeechRecognition() !== null)
 
   useEffect(() => {
     return () => {
@@ -158,7 +161,7 @@ export default function ProfileScreen({ profile, customProfileSummary, onProfile
             className="w-full flex-1 rounded-lg border-2 border-gray-300 p-2 text-base"
             rows={3}
           />
-          {speechSupported.current && (
+          {SPEECH_SUPPORTED && (
             <button
               onClick={toggleListening}
               aria-label={listening ? "Stop voice input" : "Start voice input"}

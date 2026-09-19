@@ -61,7 +61,30 @@ npm run lint
    (Profile screen is still a stub pending phase 5)
 4. Report flow (camera, location confirm, VLM result card, reroute) — DONE
 5. Natural-language profile parsing, voice input — DONE
-6. Seed script, reset endpoint, README polish, UI polish
+6. Seed script, reset endpoint, README polish, UI polish — DONE
+
+## Demo seed data (phase 6)
+- `app/seed.py: seed_demo_reports(db)` is the single source of truth — it
+  clears all reports + uploaded photos and reloads from
+  `backend/seed_photos/seed_reports.json`. Both `scripts/seed_demo.py` (CLI)
+  and `POST /api/demo/reset` (API) just call it; `app/main.py` also calls it
+  once at startup when `DEMO_MODE=true` and the reports table is empty, so a
+  clean checkout has something to show without a manual step.
+- The 4 seeded hazards' coordinates were deliberately picked from real
+  mid-block points along the *actual* computed Shortest route for the default
+  Oakland demo pair (see the `compute_routes(...)` node-enumeration snippet
+  in git history / phase 6 commit if you need to redo this for a new bbox or
+  demo pair) — that's what makes the Shortest-route-hits-hazards /
+  Stepwise-route-avoids-them contrast show up immediately on first load
+  rather than needing a manually-placed report first.
+- If you change `DEMO_START`/`DEMO_END` or `BBOX_*`, the seed coordinates
+  will no longer sit on the new route — recompute them the same way (get the
+  Shortest route's `node_ids`, take mid-block points between consecutive
+  nodes) and update `seed_reports.json`.
+- Missing photo files listed in `seed_reports.json` are auto-generated as
+  simple labeled placeholder JPEGs (`app/seed.py: _generate_placeholder_photo`)
+  — replace them with real photos any time by dropping a file with the same
+  name into `seed_photos/`.
 
 ## Custom profiles (phase 5)
 - `POST /api/profile/parse` (`app/routers/profile.py`) calls `llm.parse_profile_text`,

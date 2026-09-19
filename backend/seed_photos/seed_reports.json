@@ -1,0 +1,70 @@
+[
+  {
+    "lat": 40.4416056,
+    "lon": -79.9569025,
+    "photo": "crack_minor.jpg",
+    "note": "Small crack, easy to step over",
+    "vlm": {
+      "is_sidewalk_hazard_photo": true,
+      "hazard_type": "crack",
+      "severity": 2,
+      "passability": { "wheelchair": "passable", "walker": "passable", "cane": "passable" },
+      "confidence": 0.85,
+      "estimated_level_change_cm": 0.5,
+      "needs_better_photo": false,
+      "follow_up_question": null,
+      "reason": "A small surface crack with minimal level change, unlikely to block most users."
+    }
+  },
+  {
+    "lat": 40.4421052,
+    "lon": -79.9575449,
+    "photo": "missing_curb_cut.jpg",
+    "note": "No ramp down to the crosswalk here",
+    "vlm": {
+      "is_sidewalk_hazard_photo": true,
+      "hazard_type": "missing_curb_cut",
+      "severity": 3,
+      "passability": { "wheelchair": "difficult", "walker": "passable", "cane": "passable" },
+      "confidence": 0.8,
+      "estimated_level_change_cm": 12,
+      "needs_better_photo": false,
+      "follow_up_question": null,
+      "reason": "This crossing has no curb cut, forcing a full curb-height step down."
+    }
+  },
+  {
+    "lat": 40.4427986,
+    "lon": -79.956884,
+    "photo": "broken_surface_severe.jpg",
+    "note": "Big chunk of sidewalk heaved up and cracked apart",
+    "vlm": {
+      "is_sidewalk_hazard_photo": true,
+      "hazard_type": "broken_surface",
+      "severity": 5,
+      "passability": { "wheelchair": "impassable", "walker": "impassable", "cane": "difficult" },
+      "confidence": 0.9,
+      "estimated_level_change_cm": 9,
+      "needs_better_photo": false,
+      "follow_up_question": null,
+      "reason": "A large section of heaved, broken pavement blocks most of the path width."
+    }
+  },
+  {
+    "lat": 40.4435639,
+    "lon": -79.9558267,
+    "photo": "obstruction_truck.jpg",
+    "note": "Delivery truck parked across most of the sidewalk",
+    "vlm": {
+      "is_sidewalk_hazard_photo": true,
+      "hazard_type": "obstruction",
+      "severity": 4,
+      "passability": { "wheelchair": "impassable", "walker": "difficult", "cane": "passable" },
+      "confidence": 0.75,
+      "estimated_level_change_cm": null,
+      "needs_better_photo": false,
+      "follow_up_question": null,
+      "reason": "A parked vehicle blocks most of the sidewalk width at this spot."
+    }
+  }
+]

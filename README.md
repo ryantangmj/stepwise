@@ -6,11 +6,39 @@ Optimizes for comfortable/safe routes instead of shortest distance, and lets the
 community report sidewalk hazards by photo; a vision-language model assesses each
 photo and updates the map. Scoped to one Pittsburgh neighborhood (default: Oakland).
 
-**Status: Phase 5 of 6 complete** — full backend and frontend core loop: map
+**Status: all 6 phases complete.** Full backend and frontend core loop: map
 with route comparison and hazard markers, a full report flow (camera capture,
-location confirm, AI verdict card, reroute), and natural-language mobility
-profiles (free text or voice input, parsed by the LLM, confirmed in plain
-language before use). Phase 6 (seed data, demo reset, polish) is what's left.
+location confirm, AI verdict card, reroute), natural-language mobility
+profiles (free text or voice input, confirmed in plain language before use),
+and demo seed data with a reset endpoint so the demo can be rerun repeatedly.
+
+## Demo script (definition of done)
+
+From a clean checkout: `uv sync` in `backend/`, `npm install` in `frontend/`,
+run both (see below), open the frontend URL. You should be able to:
+
+1. Land on the Map tab with the **Wheelchair** profile already selected and
+   see a Shortest route (red dashed) that visibly passes through 4 seeded
+   hazard markers, and a distinct Stepwise route (teal) that avoids all of
+   them — at the cost of a clearly-stated detour in the comparison card and
+   the plain-language explanation underneath it.
+2. Switch profiles (Walker / Cane) and see the Stepwise route change —
+   they tolerate steeper hills than Wheelchair, so their detour is much
+   shorter for the same hazard cluster.
+3. Go to the Report tab, take/choose a hazard photo, confirm the location on
+   the mini-map (drag the pin or tap elsewhere), submit, and see the AI
+   verdict card (severity, per-profile passability, confidence) before
+   returning to the Map tab with the new hazard live and the Stepwise route
+   updated around it.
+4. Go to the Profile tab, describe your needs in your own words (or use the
+   mic button), confirm the AI's plain-language summary, and see routing
+   switch to that custom profile.
+5. Hit `POST /api/demo/reset` between runs to restore the 4 seeded hazards
+   and clear anything you added, so you can repeat the demo reliably.
+
+All of this works with `DEMO_MODE=true` even with no `OPENAI_API_KEY` set or
+no network — every AI call site falls back to a cached or templated response
+(look for the small "demo cache" badges that appear when this happens).
 
 ## Setup
 
@@ -74,8 +102,10 @@ curl -X POST localhost:8000/api/routes -H 'Content-Type: application/json' -d '{
 }'
 ```
 
-Note: the SQLite db (`backend/stepwise.db`) and uploaded photos are gitignored and
-created fresh on first run — there's no seed data yet (that's phase 6).
+Note: the SQLite db (`backend/stepwise.db`) and uploaded photos are gitignored
+and created fresh on first run. When `DEMO_MODE=true`, the backend
+auto-seeds 4 demo hazard reports along the demo route on first startup (see
+"Demo data" below) — no manual step needed.
 
 ### Frontend
 
@@ -101,6 +131,26 @@ in place. The Profile tab lets you pick a preset or describe your needs in
 your own words (typed or, on supporting browsers, spoken via a mic button) —
 the AI-parsed profile is shown back in plain language for you to confirm
 before it's used for routing.
+
+## Demo data
+
+`backend/seed_photos/seed_reports.json` defines 4 pre-analyzed hazard reports
+(coordinates, a photo filename, and a cached VLM verdict) placed along the
+default demo route: a minor crack (passable for everyone), a missing curb cut
+(difficult for wheelchair, fine for walker/cane), a severe broken-surface
+heave (impassable for wheelchair and walker), and a parked-vehicle
+obstruction (impassable for wheelchair, difficult for walker). Edit this file
+to change what gets seeded — the schema mirrors the `/api/reports` VLM
+response fields.
+
+If a referenced photo file is missing from `seed_photos/`, a placeholder JPEG
+is auto-generated. Drop in real photos with matching filenames to replace them.
+
+- `uv run python -m scripts.seed_demo` — re-seed manually from the CLI
+- `POST /api/demo/reset` — re-seed via the API (clears all reports first, so
+  it also undoes anything you added during a demo run)
+- Seeding also runs automatically on backend startup when `DEMO_MODE=true`
+  and the reports table is empty
 
 ## Configuration
 
@@ -138,6 +188,18 @@ integration for verified hazards; seeding the hazard map from Mapillary or Proje
 Sidewalk computer-vision data instead of only community reports; scaling beyond a
 single neighborhood to more cities.
 
+## API summary
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/config` | Bbox and demo start/end coordinates |
+| `POST /api/routes` | Shortest + Stepwise routes, stats, and an explanation |
+| `GET /api/reports` | Active hazard reports |
+| `POST /api/reports` | Submit a photo report (multipart: photo, lat, lon, note) |
+| `POST /api/reports/{id}/confirm` | `{"still_there": bool}` — confirm or deny |
+| `POST /api/profile/parse` | Parse a free-text mobility description |
+| `POST /api/demo/reset` | Restore the seeded demo hazards |
+
 ## Roadmap
 
 1. ✅ Backend skeleton, graph download/cache, elevation, profile-aware routing
@@ -145,4 +207,4 @@ single neighborhood to more cities.
 3. ✅ Frontend map, route comparison, hazard markers, profile selector
 4. ✅ Report flow (camera, location confirm, VLM result card, reroute)
 5. ✅ Natural-language profile parsing, route explanations, voice input
-6. Seed script, reset endpoint, UI polish
+6. ✅ Seed script, reset endpoint, README polish, UI polish
