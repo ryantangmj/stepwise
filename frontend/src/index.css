@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.45;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #f4f5f3;
+  color: #16181c;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Minimum comfortable tap target for elderly/low-dexterity users. */
+button, a, input, select, textarea {
+  font-size: inherit;
+}
+
+.tap-target {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+/* Leaflet needs an explicit height on its container. */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #e5e7eb;
+}

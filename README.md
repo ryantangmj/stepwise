@@ -6,11 +6,10 @@ Optimizes for comfortable/safe routes instead of shortest distance, and lets the
 community report sidewalk hazards by photo; a vision-language model assesses each
 photo and updates the map. Scoped to one Pittsburgh neighborhood (default: Oakland).
 
-**Status: Phase 2 of 6 complete** — backend skeleton, OSM pedestrian graph
-download/caching, elevation-based slope penalties (with graceful fallback),
-profile-aware routing, hazard reports (photo upload, VLM analysis, snapping,
-confirm/deny lifecycle, confidence decay), and hazard-aware Stepwise rerouting
-with an AI-generated (or templated, in demo mode) plain-language explanation.
+**Status: Phase 3 of 6 complete** — full backend (routing, hazard reports, VLM
+analysis, decay) plus a mobile-first React/Leaflet frontend: map with route
+comparison, colored hazard markers with photo/verdict popups, and a profile
+selector. The Report and Profile screens are still stubs (phases 4 and 5).
 
 ## Setup
 
@@ -77,6 +76,23 @@ curl -X POST localhost:8000/api/routes -H 'Content-Type: application/json' -d '{
 Note: the SQLite db (`backend/stepwise.db`) and uploaded photos are gitignored and
 created fresh on first run — there's no seed data yet (that's phase 6).
 
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open the printed local URL (default `http://localhost:5173`) with the backend
+running on `:8000` — Vite's dev server proxies `/api` and `/uploads` to it (see
+`vite.config.ts`), so no CORS setup or env var is needed in dev. Load it at a
+narrow (~390px) width or in your browser's device toolbar to see the intended
+mobile layout. The Map tab is fully functional: profile chips, tap-to-set start
+(A) and end (B), Shortest (red dashed) vs Stepwise (teal) routes, a comparison
+card, and hazard markers you can tap for the photo/AI verdict and Confirm/Gone
+buttons. Report and Profile tabs are placeholders until phases 4 and 5.
+
 ## Configuration
 
 All configuration lives in `backend/.env` (see `.env.example`). Key variables:
@@ -109,7 +125,7 @@ single neighborhood to more cities.
 
 1. ✅ Backend skeleton, graph download/cache, elevation, profile-aware routing
 2. ✅ Reports storage, snapping, hazard penalties, decay, VLM analysis endpoint
-3. Frontend map, route comparison, hazard markers, profile selector
+3. ✅ Frontend map, route comparison, hazard markers, profile selector
 4. Report flow (camera, location confirm, VLM result card, reroute)
 5. Natural-language profile parsing, route explanations, voice input
 6. Seed script, reset endpoint, UI polish

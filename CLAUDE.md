@@ -23,10 +23,12 @@ uv run python -m pytest tests/ -v -s
 uv run python -m app.graph.build_graph   # force-rebuild the OSM graph cache
 uv run python -m app.graph.elevation     # (re)attach elevation to the cached graph
 
-# Frontend (added in phase 3)
+# Frontend
 cd frontend
 npm install
-npm run dev
+npm run dev        # http://localhost:5173, proxies /api and /uploads to :8000 (see vite.config.ts)
+npx tsc -b --noEmit
+npm run lint
 ```
 
 ## Conventions
@@ -55,10 +57,37 @@ npm run dev
 1. Backend skeleton, graph download/cache, elevation, profile-aware routing — DONE
 2. Reports storage, snapping, hazard penalties, decay, VLM analysis endpoint — DONE
    (route explanations via `app/llm.py` also landed here, ahead of phase 5)
-3. Frontend map, route comparison, hazard markers, profile selector
+3. Frontend map, route comparison, hazard markers, profile selector — DONE
+   (Report/Profile screens are stubs pending phases 4/5)
 4. Report flow (camera, location confirm, VLM result card, reroute)
 5. Natural-language profile parsing (`/api/profile/parse`), voice input
 6. Seed script, reset endpoint, README polish, UI polish
+
+## Frontend notes (phase 3)
+- No router library — `App.tsx` holds a simple `tab` state and lifts shared
+  state (profile, start/end points) as props into the three screens. Fine at
+  this scope; don't reach for react-router unless the app outgrows 3 screens.
+- Leaflet gotchas hit and fixed in `screens/MapScreen.tsx` — worth knowing
+  before touching the map:
+  - **`map.invalidateSize()`**: the map mounts before the route-comparison
+    card below it has content, so the flex-computed map height changes once
+    the first route response arrives. Leaflet caches container size at
+    mount and won't notice that on its own — uncorrected, markers render
+    using the stale (taller) size and land outside the actual visible/clipped
+    area. `FitToRoute` calls `invalidateSize()` before every `fitBounds()`.
+  - **Pane z-order**: hazard `CircleMarker`s and route `Polyline`s both live
+    in Leaflet's default overlay pane, and paint order there follows DOM
+    *mount* order — not JSX order — so whichever of the reports-fetch or
+    routes-fetch effect resolves first determines whether hazards render
+    above or below the route lines. Put hazards in their own `<Pane
+    zIndex={450}>` (above the default overlay pane's 400, below the marker
+    pane's 600) so they're always tappable regardless of fetch timing.
+  - Start/End markers use `L.divIcon` rather than the default `L.Icon` —
+    Leaflet's default marker images don't resolve correctly through Vite's
+    bundler without extra config, and divIcon sidesteps that entirely.
+- Verified with a scripted Playwright pass (headless Chromium at a 390px
+  mobile viewport) rather than just visual inspection — that's how both
+  Leaflet issues above were actually caught.
 
 ## Notes on edge cases (phase 2)
 - Hazard reports snap to the nearest *edge* (`app/reports/snapping.py`); routes
